@@ -253,6 +253,12 @@ li {
   flex: 1;
   min-width: 0;
   word-break: break-all;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 4px 2px;
+  text-align: left;
+  cursor: text;
 }
 .tm {
   color: var(--soft);
@@ -279,4 +285,51 @@ li.done .txt {
   * {
     transition: none !important;
   }
+}
+
+/* ---------- 항목 수정 ---------- */
+li.editing {
+  background: var(--paper);
+  padding: 8px;
+}
+.edform {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.ed-in {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.ed-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ed-bar select,
+.ed-bar input[type="time"] {
+  min-width: 0;
+  flex: 1 1 0;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 6px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.ed-bar button {
+  flex: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ed-bar .ok {
+  background: var(--note);
+  color: #1f2a33;
 }

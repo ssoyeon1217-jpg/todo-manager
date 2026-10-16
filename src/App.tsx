@@ -2,10 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_REST_DAYS, REST_SECTION, WORK_SECTIONS } from "./constants";
 import { addDays, startOfToday, titleText, toYmd } from "./lib/date";
 import { localStorageStore as store } from "./lib/storage";
-import { blankDay, makeTask, progressOf, sortTimedInPlace, withSection } from "./lib/tasks";
-import type { DayDoc, SectionKey } from "./types";
+import { blankDay, editTask, makeTask, progressOf, sortTimedInPlace, withSection } from "./lib/tasks";
+import type { DayDoc, SectionKey, Task } from "./types";
 
 type DaySection = Exclude<SectionKey, "someday">;
+
+/** 지금 수정 중인 항목 */
+interface Editing {
+  from: DaySection;
+  id: string;
+  text: string;
+  time: string;
+  section: DaySection;
+}
 
 export default function App() {
   const [cur, setCur] = useState<Date>(startOfToday);
@@ -13,6 +22,7 @@ export default function App() {
   const [target, setTarget] = useState<DaySection>("school");
   const [text, setText] = useState("");
   const [time, setTime] = useState("");
+  const [editing, setEditing] = useState<Editing | null>(null);
 
   const ymd = toYmd(cur);
   const mode: DayDoc["mode"] = useMemo(
@@ -24,6 +34,7 @@ export default function App() {
   // 날짜가 바뀌면 그날 문서를 불러옵니다.
   useEffect(() => {
     let alive = true;
+    setEditing(null);
     store.getDay(ymd).then((d) => {
       if (!alive) return;
       const defaultMode = DEFAULT_REST_DAYS.includes(cur.getDay()) ? "rest" : "work";
@@ -55,6 +66,25 @@ export default function App() {
 
   function remove(key: DaySection, id: string) {
     update(withSection(doc, key, (doc.sections[key] ?? []).filter((t) => t.id !== id)));
+    if (editing?.id === id) setEditing(null);
+  }
+
+  function startEdit(key: DaySection, t: Task) {
+    setEditing({ from: key, id: t.id, text: t.text, time: t.time ?? "", section: key });
+  }
+
+  function saveEdit() {
+    if (!editing) return;
+    // 내용이 비어 있으면 저장하지 않고 그대로 둡니다. (삭제는 ✕ 버튼으로)
+    if (!editing.text.trim()) return;
+    update(
+      editTask(doc, editing.from, editing.id, {
+        text: editing.text,
+        time: editing.time,
+        section: editing.section,
+      }),
+    );
+    setEditing(null);
   }
 
   const all = sections.flatMap((s) => doc.sections[s.key as DaySection] ?? []);
@@ -132,22 +162,81 @@ export default function App() {
                 {s.name} <small>{list.length ? `${list.filter((t) => t.done).length}/${list.length}` : ""}</small>
               </h2>
               <ul>
-                {list.map((t) => (
-                  <li key={t.id} className={t.done ? "done" : ""}>
-                    <input
-                      type="checkbox"
-                      className="cb"
-                      checked={t.done}
-                      onChange={() => toggle(key, t.id)}
-                      aria-label={`${t.text} 완료`}
-                    />
-                    {t.time && <small className="tm">{t.time}</small>}
-                    <span className="txt">{t.text}</span>
-                    <button className="x" aria-label={`${t.text} 삭제`} onClick={() => remove(key, t.id)}>
-                      ✕
-                    </button>
-                  </li>
-                ))}
+                {list.map((t) =>
+                  editing && editing.id === t.id ? (
+                    <li key={t.id} className="editing">
+                      <form
+                        className="edform"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          saveEdit();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setEditing(null);
+                        }}
+                      >
+                        <input
+                          className="ed-in"
+                          autoFocus
+                          value={editing.text}
+                          onChange={(e) => setEditing({ ...editing, text: e.target.value })}
+                          aria-label="할 일 수정"
+                        />
+                        <div className="ed-bar">
+                          {mode === "work" && (
+                            <select
+                              value={editing.section}
+                              onChange={(e) =>
+                                setEditing({ ...editing, section: e.target.value as DaySection })
+                              }
+                              aria-label="칸 이동"
+                            >
+                              {WORK_SECTIONS.map((w) => (
+                                <option key={w.key} value={w.key}>
+                                  {w.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          <input
+                            type="time"
+                            value={editing.time}
+                            onChange={(e) => setEditing({ ...editing, time: e.target.value })}
+                            aria-label="시간(선택)"
+                          />
+                          <button type="submit" className="ok">
+                            저장
+                          </button>
+                          <button type="button" onClick={() => setEditing(null)}>
+                            취소
+                          </button>
+                        </div>
+                      </form>
+                    </li>
+                  ) : (
+                    <li key={t.id} className={t.done ? "done" : ""}>
+                      <input
+                        type="checkbox"
+                        className="cb"
+                        checked={t.done}
+                        onChange={() => toggle(key, t.id)}
+                        aria-label={`${t.text} 완료`}
+                      />
+                      {t.time && <small className="tm">{t.time}</small>}
+                      <button
+                        type="button"
+                        className="txt"
+                        aria-label={`${t.text} 수정`}
+                        onClick={() => startEdit(key, t)}
+                      >
+                        {t.text}
+                      </button>
+                      <button className="x" aria-label={`${t.text} 삭제`} onClick={() => remove(key, t.id)}>
+                        ✕
+                      </button>
+                    </li>
+                  ),
+                )}
               </ul>
             </section>
           );

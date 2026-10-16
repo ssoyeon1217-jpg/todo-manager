@@ -31,6 +31,43 @@ export function withSection(
   return { ...doc, sections: { ...doc.sections, [key]: tasks } };
 }
 
+export interface TaskEdit {
+  text: string;
+  /** 빈 문자열이면 시간 없음 */
+  time: string;
+  section: Exclude<SectionKey, "someday">;
+}
+
+/**
+ * 항목의 글·시간·칸을 수정한 새 DayDoc을 반환합니다.
+ * - 내용이 비어 있거나 항목을 찾지 못하면 원본을 그대로 돌려줍니다.
+ * - 같은 칸이면 자리를 유지하고, 다른 칸으로 옮기면 그 칸의 맨 끝에 붙습니다.
+ * - 시간이 있는 일끼리만 시간순으로 다시 정렬합니다.
+ */
+export function editTask(
+  doc: DayDoc,
+  from: Exclude<SectionKey, "someday">,
+  id: string,
+  edit: TaskEdit,
+): DayDoc {
+  const text = edit.text.trim();
+  const source = doc.sections[from] ?? [];
+  const original = source.find((t) => t.id === id);
+  if (!text || !original) return doc;
+
+  const { time: _oldTime, ...rest } = original;
+  const updated: Task = { ...rest, text, ...(edit.time ? { time: edit.time } : {}) };
+
+  if (edit.section === from) {
+    const list = source.map((t) => (t.id === id ? updated : t));
+    return withSection(doc, from, sortTimedInPlace(list));
+  }
+
+  const without = source.filter((t) => t.id !== id);
+  const target = [...(doc.sections[edit.section] ?? []), updated];
+  return withSection(withSection(doc, from, without), edit.section, sortTimedInPlace(target));
+}
+
 export function progressOf(tasks: Task[]): { done: number; total: number } {
   return { done: tasks.filter((t) => t.done).length, total: tasks.length };
 }

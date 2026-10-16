@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, buildMonthGrid, toYmd } from "./date";
+import { addDays, buildMonthGrid, titleParts, titleText, toYmd } from "./date";
 
 describe("toYmd", () => {
   it("0을 채운 YYYY-MM-DD 로 바꾼다", () => {
@@ -24,5 +24,24 @@ describe("buildMonthGrid", () => {
 
   it("2월(윤년)도 날짜 수가 맞다", () => {
     expect(buildMonthGrid(2028, 1).filter((x) => x !== null).length).toBe(29);
+  });
+});
+
+describe("titleParts / titleText", () => {
+  const today = new Date(2026, 9, 16); // 2026-10-16 (금)
+
+  it("오늘·내일·어제는 상대 표현을 붙인다", () => {
+    expect(titleParts(today, today)).toEqual({ relative: "오늘", date: "10월 16일 (금)" });
+    expect(titleParts(new Date(2026, 9, 17), today).relative).toBe("내일");
+    expect(titleParts(new Date(2026, 9, 15), today).relative).toBe("어제");
+  });
+
+  it("그 밖의 날은 상대 표현이 없다", () => {
+    expect(titleParts(new Date(2026, 9, 20), today)).toEqual({ relative: null, date: "10월 20일 (화)" });
+  });
+
+  it("titleText 는 둘을 합친다", () => {
+    expect(titleText(today, today)).toBe("오늘 · 10월 16일 (금)");
+    expect(titleText(new Date(2026, 9, 20), today)).toBe("10월 20일 (화)");
   });
 });

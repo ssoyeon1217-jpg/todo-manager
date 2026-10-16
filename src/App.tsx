@@ -1,8 +1,9 @@
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, GripVertical, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MonthView from "./components/MonthView";
 import SortableList from "./components/SortableList";
 import { DEFAULT_REST_DAYS, REST_SECTION, SOMEDAY_SECTION, WORK_SECTIONS } from "./constants";
-import { addDays, startOfToday, titleText, toYmd } from "./lib/date";
+import { addDays, startOfToday, titleParts, toYmd } from "./lib/date";
 import { localStorageStore as store } from "./lib/storage";
 import {
   blankDay,
@@ -199,34 +200,38 @@ export default function App() {
   }
 
   const chips = [...sections, SOMEDAY_SECTION];
+  const { relative, date: dateText } = titleParts(cur);
+  const isToday = relative === "오늘";
 
   return (
     <div className="wrap">
       <header>
-        <button className="nav" aria-label="이전 날" onClick={() => setCur(addDays(cur, -1))}>
-          ‹
+        <div className="title">
+          <p className="eyebrow">{relative ?? `${cur.getFullYear()}년`}</p>
+          <h1>{dateText}</h1>
+        </div>
+        {!isToday && (
+          <button className="text-btn" onClick={() => setCur(startOfToday())}>
+            오늘로
+          </button>
+        )}
+        <button className="icon-btn" aria-label="이전 날" onClick={() => setCur(addDays(cur, -1))}>
+          <ChevronLeft size={20} aria-hidden="true" />
         </button>
-        <h1>{titleText(cur)}</h1>
-        <button className="nav" aria-label="다음 날" onClick={() => setCur(addDays(cur, 1))}>
-          ›
+        <button className="icon-btn" aria-label="다음 날" onClick={() => setCur(addDays(cur, 1))}>
+          <ChevronRight size={20} aria-hidden="true" />
+        </button>
+        <button className="icon-btn" aria-label="달력 보기" onClick={() => setView("month")}>
+          <CalendarDays size={20} aria-hidden="true" />
         </button>
       </header>
 
-      <div className="sub">
-        <button className="pill" onClick={() => setCur(startOfToday())}>
-          오늘
-        </button>
-        <button className="pill" onClick={() => setView("month")}>
-          달력
-        </button>
-      </div>
-
-      <div className="progress">
+      <div className="progress" aria-label={`${total}개 중 ${done}개 완료`}>
         <span>
           {done}/{total}
         </span>
-        <div className="bar">
-          <i style={{ width: total ? `${(done / total) * 100}%` : "0%" }} />
+        <div className="track">
+          <i style={{ transform: `scaleX(${total ? done / total : 0})` }} />
         </div>
       </div>
 
@@ -266,9 +271,17 @@ export default function App() {
             className="time"
             disabled={effTarget === "someday"}
           />
-          <button type="submit">추가</button>
+          <button type="submit" className="primary-btn" disabled={!text.trim()}>
+            추가
+          </button>
         </div>
       </form>
+
+      {total === 0 && (
+        <p className="empty-day">
+          {mode === "rest" ? "오늘 할 일이 아직 없어요." : "이 날의 할 일이 아직 없어요."} 위에서 칸을 고르고 추가해 보세요.
+        </p>
+      )}
 
       <div className="rail">
         {sections.map((s) => {
@@ -322,19 +335,21 @@ export default function App() {
                             onChange={(e) => setEditing({ ...editing, time: e.target.value })}
                             aria-label="시간(선택)"
                           />
-                          <button type="submit" className="ok">
-                            저장
-                          </button>
-                          <button type="button" onClick={() => setEditing(null)}>
-                            취소
-                          </button>
+                          <div className="actions">
+                            <button type="button" className="text-btn" onClick={() => setEditing(null)}>
+                              취소
+                            </button>
+                            <button type="submit" className="outline-btn">
+                              저장
+                            </button>
+                          </div>
                         </div>
                       </form>
                     </li>
                   ) : (
                     <li key={t.id} className={t.done ? "done" : ""}>
                       <span className="grip" aria-hidden="true">
-                        ⋮⋮
+                        <GripVertical size={16} />
                       </span>
                       <input
                         type="checkbox"
@@ -353,7 +368,7 @@ export default function App() {
                         {t.text}
                       </button>
                       <button className="x" aria-label={`${t.text} 삭제`} onClick={() => remove(key, t.id)}>
-                        ✕
+                        <X size={18} aria-hidden="true" />
                       </button>
                     </li>
                   ),
@@ -368,6 +383,7 @@ export default function App() {
         <summary>
           <span>언젠가</span>
           <small>{someday.length ? `${someday.length}개` : ""}</small>
+          <ChevronDown className="chev" size={18} aria-hidden="true" />
         </summary>
         {someday.length === 0 ? (
           <p className="empty">언젠가 할 일을 위의 '언젠가' 칸으로 추가해 두세요.</p>
@@ -376,14 +392,14 @@ export default function App() {
             {someday.map((t) => (
               <li key={t.id}>
                 <span className="grip" aria-hidden="true">
-                  ⋮⋮
+                  <GripVertical size={16} />
                 </span>
                 <span className="txt">{t.text}</span>
-                <button type="button" className="bring" onClick={() => onBringClick(t.id)}>
+                <button type="button" className="outline-btn" onClick={() => onBringClick(t.id)}>
                   오늘로
                 </button>
                 <button className="x" aria-label={`${t.text} 삭제`} onClick={() => removeSomeday(t.id)}>
-                  ✕
+                  <X size={18} aria-hidden="true" />
                 </button>
                 {bringId === t.id && (
                   <div className="pick">

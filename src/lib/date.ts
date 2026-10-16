@@ -36,10 +36,17 @@ export function buildMonthGrid(year: number, month0: number): (number | null)[] 
 
 /** "오늘 · 10월 16일 (금)" 형태의 제목 */
 export function titleText(cur: Date, today: Date = startOfToday()): string {
+  const { relative, date } = titleParts(cur, today);
+  return relative ? `${relative} · ${date}` : date;
+}
+
+/** 제목을 둘로 나눕니다: 상대 표현("오늘/내일/어제", 아니면 null)과 "10월 16일 (금)" */
+export function titleParts(
+  cur: Date,
+  today: Date = startOfToday(),
+): { relative: string | null; date: string } {
   const diff = Math.round((cur.getTime() - today.getTime()) / 864e5);
-  const base = `${cur.getMonth() + 1}월 ${cur.getDate()}일 (${WEEKDAYS[cur.getDay()]})`;
-  if (diff === 0) return `오늘 · ${base}`;
-  if (diff === 1) return `내일 · ${base}`;
-  if (diff === -1) return `어제 · ${base}`;
-  return base;
+  const date = `${cur.getMonth() + 1}월 ${cur.getDate()}일 (${WEEKDAYS[cur.getDay()]})`;
+  const relative = diff === 0 ? "오늘" : diff === 1 ? "내일" : diff === -1 ? "어제" : null;
+  return { relative, date };
 }

@@ -1,0 +1,12 @@
+{
+  "name": "할일 관리",
+  "short_name": "할일",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#b2c7d9",
+  "theme_color": "#b2c7d9",
+  "lang": "ko",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

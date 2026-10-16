@@ -1,4 +1,4 @@
-import type { SectionKey } from "./types";
+import type { SectionKey, Settings } from "./types";
 
 export interface SectionDef {
   key: SectionKey;
@@ -22,3 +22,8 @@ export const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as con
 
 /** 기본 쉬는 요일: 일, 토 */
 export const DEFAULT_REST_DAYS = [0, 6];
+
+export const DEFAULT_SETTINGS: Settings = {
+  restDays: [...DEFAULT_REST_DAYS],
+  autoRoutine: true,
+};

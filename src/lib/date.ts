@@ -8,6 +8,11 @@ export function toYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** 오늘로부터 며칠 뒤인지 (어제=-1, 오늘=0, 내일=1) */
+export function daysFromToday(d: Date, today: Date = startOfToday()): number {
+  return Math.round((d.getTime() - today.getTime()) / 864e5);
+}
+
 export function addDays(d: Date, n: number): Date {
   const x = new Date(d);
   x.setDate(x.getDate() + n);
@@ -45,8 +50,8 @@ export function titleParts(
   cur: Date,
   today: Date = startOfToday(),
 ): { relative: string | null; date: string } {
-  const diff = Math.round((cur.getTime() - today.getTime()) / 864e5);
-  const date = `${cur.getMonth() + 1}월 ${cur.getDate()}일 (${WEEKDAYS[cur.getDay()]})`;
+  const diff = daysFromToday(cur, today);
+  const date =`${cur.getMonth() + 1}월 ${cur.getDate()}일 (${WEEKDAYS[cur.getDay()]})`;
   const relative = diff === 0 ? "오늘" : diff === 1 ? "내일" : diff === -1 ? "어제" : null;
   return { relative, date };
 }

@@ -708,3 +708,184 @@ button.mcell:hover {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   세부 항목 (○ △ ✕)
+   ========================================================================== */
+li {
+  flex-wrap: wrap;
+}
+.subs {
+  flex: 1 1 100%;
+  min-height: 0;
+  margin: 0 0 4px 30px;
+}
+.subs li {
+  flex-wrap: nowrap;
+  min-height: 36px;
+  padding: 0;
+  border-bottom: 0;
+}
+.mk {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 50%;
+}
+/* 눈에 보이는 크기는 작게, 누를 수 있는 영역은 넓게 */
+.mk::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+.mk-empty {
+  opacity: 0.3;
+}
+.sub-txt {
+  color: var(--ink-2);
+  word-break: keep-all;
+}
+.subs li[data-m="t"] .sub-txt {
+  font-style: italic;
+}
+.subs li[data-m="x"] .sub-txt {
+  color: var(--ink-3);
+}
+.subs li[data-m="o"] .sub-txt {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.subcount {
+  flex: none;
+  color: var(--ink-3);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 수정 화면 안의 세부 항목 */
+.subedit {
+  display: grid;
+  gap: 8px;
+}
+.sub-label {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.subrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.subrow input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--control);
+  border-radius: var(--radius-ctl);
+  background: var(--bg);
+}
+
+/* ==========================================================================
+   도구 줄 · 루틴 화면
+   ========================================================================== */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: -8px 0 16px -12px;
+}
+.snack.notice {
+  padding-right: 20px;
+}
+
+.rsec {
+  margin-bottom: 32px;
+}
+.rsec h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-h2);
+  line-height: 1.4;
+}
+.rhint,
+.rsec .empty {
+  margin: 0 0 12px;
+  color: var(--ink-3);
+  font-size: var(--fs-sm);
+  max-width: 65ch;
+}
+.ritem {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 0;
+}
+.r-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.r-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--control);
+  border-radius: var(--radius-ctl);
+  background: var(--bg);
+}
+.ritem select {
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--control);
+  border-radius: var(--radius-ctl);
+  background: var(--bg);
+  color: var(--ink);
+}
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.daybtn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--control);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  transition: background-color 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.daybtn:active {
+  transform: scale(0.95);
+}
+.daybtn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  color: var(--ink-2);
+}
+.check-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}

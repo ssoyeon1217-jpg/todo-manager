@@ -1,5 +1,6 @@
+import { normalizeRoutines, normalizeSettings } from "./normalize";
 import { summarizeDay } from "./tasks";
-import type { DayDoc, DaySummary, Routine, Storage, Task } from "../types";
+import type { DayDoc, DaySummary, Storage, Task } from "../types";
 
 const PREFIX = "todo-manager:";
 
@@ -54,9 +55,15 @@ export const localStorageStore: Storage = {
     write("someday", items);
   },
   async getRoutines() {
-    return read<Routine[]>("routines", []);
+    return normalizeRoutines(read<unknown>("routines", []));
   },
   async saveRoutines(items) {
     write("routines", items);
+  },
+  async getSettings() {
+    return normalizeSettings(read<unknown>("settings", null));
+  },
+  async saveSettings(settings) {
+    write("settings", settings);
   },
 };

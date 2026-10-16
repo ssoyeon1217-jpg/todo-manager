@@ -37,7 +37,9 @@ todo-manager/
 │  ├─ App.tsx           # 화면 (날짜 이동 · 입력 · 칸별 목록)
 │  ├─ components/
 │  │  ├─ SortableList.tsx  # 드래그 정렬 목록 (sortablejs)
-│  │  └─ MonthView.tsx     # 월간 달력
+│  │  ├─ MonthView.tsx     # 월간 달력
+│  │  ├─ SubList.tsx / SubEditor.tsx / MarkIcon.tsx  # 세부 항목 (○ △ ✕)
+│  │  └─ RoutinesView.tsx  # 루틴 · 설정 화면
 │  ├─ constants.ts      # 칸(일과전/일과중…) 정의, 요일
 │  ├─ types.ts          # Task · DayDoc · Routine · Storage 타입
 │  ├─ styles.css
@@ -46,6 +48,9 @@ todo-manager/
 │     ├─ date.test.ts
 │     ├─ tasks.ts       # 순수 로직 (정렬, 진행률 …)
 │     ├─ tasks.test.ts
+│     ├─ routines.ts    # 루틴을 하루에 넣는 로직
+│     ├─ routines.test.ts
+│     ├─ normalize.ts   # 저장된 설정·루틴 값 보정
 │     └─ storage.ts     # localStorage 저장소
 └─ .github/workflows/        # ci.yml(푸시마다 검사), deploy.yml(Pages 배포, 수동)
 ```

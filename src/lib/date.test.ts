@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, buildMonthGrid, titleParts, titleText, toYmd } from "./date";
+import { addDays, buildMonthGrid, daysFromToday, titleParts, titleText, toYmd } from "./date";
 
 describe("toYmd", () => {
   it("0을 채운 YYYY-MM-DD 로 바꾼다", () => {
@@ -43,5 +43,14 @@ describe("titleParts / titleText", () => {
   it("titleText 는 둘을 합친다", () => {
     expect(titleText(today, today)).toBe("오늘 · 10월 16일 (금)");
     expect(titleText(new Date(2026, 9, 20), today)).toBe("10월 20일 (화)");
+  });
+});
+
+describe("daysFromToday", () => {
+  it("어제는 -1, 내일은 1", () => {
+    const today = new Date(2026, 9, 16);
+    expect(daysFromToday(new Date(2026, 9, 15), today)).toBe(-1);
+    expect(daysFromToday(today, today)).toBe(0);
+    expect(daysFromToday(new Date(2026, 9, 17), today)).toBe(1);
   });
 });

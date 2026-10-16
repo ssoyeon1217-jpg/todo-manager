@@ -1,4 +1,4 @@
-import type { DayDoc, DaySummary, SectionKey, Task } from "../types";
+import type { DayDoc, DaySummary, Mark, SectionKey, SubItem, Task } from "../types";
 
 export function newId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -31,11 +31,57 @@ export function withSection(
   return { ...doc, sections: { ...doc.sections, [key]: tasks } };
 }
 
+export function makeSub(text: string): SubItem {
+  return { id: newId(), text: text.trim(), mark: null };
+}
+
+/** '공부'로 시작하는 항목의 세부 내용은 ○ △ ✕ 로, 그 밖의 항목은 ○ ✕ 로 표시합니다. */
+export function isStudy(task: Pick<Task, "text">): boolean {
+  return task.text.trim().startsWith("공부");
+}
+
+/**
+ * 표시를 누를 때마다 바뀌는 순서.
+ * 공부: 없음 → ○ → △ → ✕ → 없음 / 그 외: 없음 → ○ → ✕ → 없음
+ */
+export function nextMark(mark: Mark, study: boolean): Mark {
+  if (mark === null) return "o";
+  if (mark === "o") return study ? "t" : "x";
+  if (mark === "t") return "x";
+  return null;
+}
+
+/** 한 항목의 세부 내용 중 ○ 로 표시된 개수 / 전체 개수 */
+export function subProgress(task: Task): { done: number; total: number } {
+  const subs = task.subs ?? [];
+  return { done: subs.filter((s) => s.mark === "o").length, total: subs.length };
+}
+
+/** 세부 항목 하나의 표시를 다음 단계로 바꾼 새 DayDoc */
+export function cycleSubMark(
+  doc: DayDoc,
+  key: Exclude<SectionKey, "someday">,
+  taskId: string,
+  subId: string,
+): DayDoc {
+  const list = (doc.sections[key] ?? []).map((t) => {
+    if (t.id !== taskId || !t.subs) return t;
+    const study = isStudy(t);
+    return {
+      ...t,
+      subs: t.subs.map((s) => (s.id === subId ? { ...s, mark: nextMark(s.mark, study) } : s)),
+    };
+  });
+  return withSection(doc, key, list);
+}
+
 export interface TaskEdit {
   text: string;
   /** 빈 문자열이면 시간 없음 */
   time: string;
   section: Exclude<SectionKey, "someday">;
+  /** 주어지면 세부 항목을 이 목록으로 바꿈 (빈 글은 버림). 생략하면 그대로 둠 */
+  subs?: SubItem[];
 }
 
 /**
@@ -55,8 +101,17 @@ export function editTask(
   const original = source.find((t) => t.id === id);
   if (!text || !original) return doc;
 
-  const { time: _oldTime, ...rest } = original;
-  const updated: Task = { ...rest, text, ...(edit.time ? { time: edit.time } : {}) };
+  const { time: _oldTime, subs: oldSubs, ...rest } = original;
+  const subs =
+    edit.subs === undefined
+      ? oldSubs
+      : edit.subs.map((s) => ({ ...s, text: s.text.trim() })).filter((s) => s.text);
+  const updated: Task = {
+    ...rest,
+    text,
+    ...(edit.time ? { time: edit.time } : {}),
+    ...(subs && subs.length ? { subs } : {}),
+  };
 
   if (edit.section === from) {
     const list = source.map((t) => (t.id === id ? updated : t));

@@ -19,19 +19,35 @@ export interface Task {
   subs?: SubItem[];
 }
 
+/** 근무일의 시간대 칸 (루틴은 이 중 하나에 들어감) */
+export type WorkSectionKey = "go" | "school" | "back" | "home";
+
 /** 하루치 문서. 입력한 순서가 곧 할 순서 */
 export interface DayDoc {
   mode: "work" | "rest";
   sections: Partial<Record<Exclude<SectionKey, "someday">, Task[]>>;
+  /** 루틴을 이미 넣은 날. 지운 루틴이 자동으로 다시 생기지 않게 표시 */
+  routinesDone?: boolean;
 }
 
 /** 반복 할 일(루틴) */
 export interface Routine {
   id: string;
   text: string;
-  section: SectionKey;
+  /** 근무일에 들어갈 칸 (쉬는 날엔 모두 '오늘 할 일') */
+  section: WorkSectionKey;
   /** 반복 요일(일=0 … 토=6). 비어 있으면 매일 */
   days: number[];
+  /** true 면 쉬는 날엔 넣지 않음 */
+  workOnly?: boolean;
+}
+
+/** 앱 설정 */
+export interface Settings {
+  /** 쉬는 요일(일=0 … 토=6) */
+  restDays: number[];
+  /** 오늘·내일을 처음 열 때 루틴을 자동으로 넣기 */
+  autoRoutine: boolean;
 }
 
 /** 하루의 할 일 개수 요약 (월간 달력 표시용) */
@@ -50,4 +66,6 @@ export interface Storage {
   saveSomeday(items: Task[]): Promise<void>;
   getRoutines(): Promise<Routine[]>;
   saveRoutines(items: Routine[]): Promise<void>;
+  getSettings(): Promise<Settings>;
+  saveSettings(settings: Settings): Promise<void>;
 }

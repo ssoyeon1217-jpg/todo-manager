@@ -1,21 +1,28 @@
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, GripVertical, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MonthView from "./components/MonthView";
+import RoutinesView from "./components/RoutinesView";
 import SortableList from "./components/SortableList";
-import { DEFAULT_REST_DAYS, REST_SECTION, SOMEDAY_SECTION, WORK_SECTIONS } from "./constants";
-import { addDays, startOfToday, titleParts, toYmd } from "./lib/date";
+import SubEditor from "./components/SubEditor";
+import SubList from "./components/SubList";
+import { DEFAULT_SETTINGS, REST_SECTION, SOMEDAY_SECTION, WORK_SECTIONS } from "./constants";
+import { addDays, daysFromToday, startOfToday, titleParts, toYmd } from "./lib/date";
+import { applyRoutines } from "./lib/routines";
 import { localStorageStore as store } from "./lib/storage";
 import {
   blankDay,
+  cycleSubMark,
   editTask,
   insertAt,
+  makeSub,
   makeTask,
   progressOf,
   reorder,
   sortTimedInPlace,
+  subProgress,
   withSection,
 } from "./lib/tasks";
-import type { DayDoc, SectionKey, Task } from "./types";
+import type { DayDoc, Routine, SectionKey, Settings, SubItem, Task } from "./types";
 
 type DaySection = Exclude<SectionKey, "someday">;
 
@@ -26,6 +33,9 @@ interface Editing {
   text: string;
   time: string;
   section: DaySection;
+  subs: SubItem[];
+  /** 세부 항목 입력창에 적어 둔(아직 '추가'를 누르지 않은) 글 */
+  subDraft: string;
 }
 
 /** 방금 지운 항목 (되돌리기용) */
@@ -36,7 +46,7 @@ type UndoState =
 const UNDO_MS = 6000;
 
 export default function App() {
-  const [view, setView] = useState<"day" | "month">("day");
+  const [view, setView] = useState<"day" | "month" | "routines">("day");
   const [cur, setCur] = useState<Date>(startOfToday);
   const [doc, setDoc] = useState<DayDoc>(blankDay());
   const [someday, setSomeday] = useState<Task[]>([]);
@@ -46,39 +56,74 @@ export default function App() {
   const [editing, setEditing] = useState<Editing | null>(null);
   const [undo, setUndo] = useState<UndoState | null>(null);
   const [bringId, setBringId] = useState<string | null>(null);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [ready, setReady] = useState(false);
+  const [loadedYmd, setLoadedYmd] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const undoTimer = useRef<number | undefined>(undefined);
+  const noticeTimer = useRef<number | undefined>(undefined);
 
   const ymd = toYmd(cur);
-  const mode: DayDoc["mode"] = useMemo(
-    () => doc.mode ?? (DEFAULT_REST_DAYS.includes(cur.getDay()) ? "rest" : "work"),
-    [doc.mode, cur],
-  );
+  const mode: DayDoc["mode"] = doc.mode ?? "work";
   const sections = mode === "rest" ? [REST_SECTION] : WORK_SECTIONS;
   // 입력창에서 실제로 추가될 칸 (쉬는 날엔 '오늘 할 일' 또는 '언젠가' 둘뿐)
   const effTarget: SectionKey = target === "someday" ? "someday" : mode === "rest" ? "rest" : target;
 
-  // 날짜가 바뀌면 그날 문서를 불러옵니다.
+  // 설정·루틴·'언젠가' 목록은 날짜와 상관없이 처음 한 번만 불러옵니다.
   useEffect(() => {
+    let alive = true;
+    void Promise.all([store.getSettings(), store.getRoutines(), store.getSomeday()]).then(([st, rt, sd]) => {
+      if (!alive) return;
+      setSettings(st);
+      setRoutines(rt);
+      setSomeday(sd);
+      setReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 날짜가 바뀌면 그날 문서를 불러옵니다. (설정을 먼저 읽은 뒤에)
+  useEffect(() => {
+    if (!ready) return;
     let alive = true;
     setEditing(null);
     setBringId(null);
     setUndo((u) => (u?.kind === "day" ? null : u));
     void store.getDay(ymd).then((d) => {
       if (!alive) return;
-      const defaultMode = DEFAULT_REST_DAYS.includes(cur.getDay()) ? "rest" : "work";
+      const defaultMode = settings.restDays.includes(cur.getDay()) ? "rest" : "work";
       setDoc(d ?? blankDay(defaultMode));
+      setLoadedYmd(ymd);
     });
     return () => {
       alive = false;
     };
-  }, [ymd, cur]);
+    // settings.restDays 는 새 날짜를 열 때만 읽으면 되므로 의존성에서 뺍니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ymd, cur, ready]);
 
-  // '언젠가' 목록은 날짜와 상관없이 한 번만 불러옵니다.
+  // 오늘·내일을 처음 열 때 그 요일의 루틴을 자동으로 넣습니다. (날짜마다 한 번만)
   useEffect(() => {
-    void store.getSomeday().then(setSomeday);
-  }, []);
+    if (!ready || view !== "day" || loadedYmd !== ymd) return;
+    if (!settings.autoRoutine || routines.length === 0 || doc.routinesDone) return;
+    const ahead = daysFromToday(cur);
+    if (ahead < 0 || ahead > 1) return;
+    const { doc: next, added } = applyRoutines(doc, routines, cur.getDay());
+    update({ ...next, routinesDone: true });
+    if (added > 0) flash(`루틴 ${added}개를 넣었어요`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, view, loadedYmd, ymd, doc, routines, settings.autoRoutine]);
 
-  useEffect(() => () => window.clearTimeout(undoTimer.current), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(undoTimer.current);
+      window.clearTimeout(noticeTimer.current);
+    },
+    [],
+  );
 
   function update(next: DayDoc) {
     setDoc(next);
@@ -88,6 +133,40 @@ export default function App() {
   function updateSomeday(next: Task[]) {
     setSomeday(next);
     void store.saveSomeday(next);
+  }
+
+  function updateRoutines(next: Routine[]) {
+    setRoutines(next);
+    void store.saveRoutines(next);
+  }
+
+  function updateSettings(next: Settings) {
+    setSettings(next);
+    void store.saveSettings(next);
+  }
+
+  function flash(msg: string) {
+    window.clearTimeout(noticeTimer.current);
+    setNotice(msg);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), UNDO_MS / 2);
+  }
+
+  /** 이 날의 루틴을 직접 넣습니다. (이미 있는 건 건너뜀) */
+  function applyToday() {
+    const { doc: next, added } = applyRoutines(doc, routines, cur.getDay());
+    update({ ...next, routinesDone: true });
+    flash(added > 0 ? `루틴 ${added}개를 넣었어요` : "이 요일 루틴은 이미 다 들어가 있어요");
+  }
+
+  function closeRoutines() {
+    // 이름을 적지 않은 루틴은 정리합니다.
+    const kept = routines.filter((r) => r.text.trim());
+    if (kept.length !== routines.length) updateRoutines(kept);
+    setView("day");
+  }
+
+  function cycleMark(key: DaySection, taskId: string, subId: string) {
+    update(cycleSubMark(doc, key, taskId, subId));
   }
 
   function showUndo(u: UndoState) {
@@ -148,18 +227,29 @@ export default function App() {
   }
 
   function startEdit(key: DaySection, t: Task) {
-    setEditing({ from: key, id: t.id, text: t.text, time: t.time ?? "", section: key });
+    setEditing({
+      from: key,
+      id: t.id,
+      text: t.text,
+      time: t.time ?? "",
+      section: key,
+      subs: t.subs ?? [],
+      subDraft: "",
+    });
   }
 
   function saveEdit() {
     if (!editing) return;
     // 내용이 비어 있으면 저장하지 않고 그대로 둡니다. (삭제는 ✕ 버튼으로)
     if (!editing.text.trim()) return;
+    // 입력창에 적어 두고 '추가'를 안 누른 세부 항목도 함께 저장합니다.
+    const subs = editing.subDraft.trim() ? [...editing.subs, makeSub(editing.subDraft)] : editing.subs;
     update(
       editTask(doc, editing.from, editing.id, {
         text: editing.text,
         time: editing.time,
         section: editing.section,
+        subs,
       }),
     );
     setEditing(null);
@@ -182,6 +272,20 @@ export default function App() {
 
   const all = sections.flatMap((s) => doc.sections[s.key as DaySection] ?? []);
   const { done, total } = progressOf(all);
+
+  if (view === "routines") {
+    return (
+      <div className="wrap">
+        <RoutinesView
+          routines={routines}
+          settings={settings}
+          onRoutines={updateRoutines}
+          onSettings={updateSettings}
+          onClose={closeRoutines}
+        />
+      </div>
+    );
+  }
 
   if (view === "month") {
     return (
@@ -210,11 +314,6 @@ export default function App() {
           <p className="eyebrow">{relative ?? `${cur.getFullYear()}년`}</p>
           <h1>{dateText}</h1>
         </div>
-        {!isToday && (
-          <button className="text-btn" onClick={() => setCur(startOfToday())}>
-            오늘로
-          </button>
-        )}
         <button className="icon-btn" aria-label="이전 날" onClick={() => setCur(addDays(cur, -1))}>
           <ChevronLeft size={20} aria-hidden="true" />
         </button>
@@ -225,6 +324,22 @@ export default function App() {
           <CalendarDays size={20} aria-hidden="true" />
         </button>
       </header>
+
+      <div className="toolbar">
+        {!isToday && (
+          <button type="button" className="text-btn" onClick={() => setCur(startOfToday())}>
+            오늘로
+          </button>
+        )}
+        {routines.length > 0 && (
+          <button type="button" className="text-btn" onClick={applyToday}>
+            루틴 넣기
+          </button>
+        )}
+        <button type="button" className="text-btn" onClick={() => setView("routines")}>
+          루틴 설정
+        </button>
+      </div>
 
       <div className="progress" aria-label={`${total}개 중 ${done}개 완료`}>
         <span>
@@ -313,6 +428,12 @@ export default function App() {
                           onChange={(e) => setEditing({ ...editing, text: e.target.value })}
                           aria-label="할 일 수정"
                         />
+                        <SubEditor
+                          subs={editing.subs}
+                          draft={editing.subDraft}
+                          onChange={(subs) => setEditing({ ...editing, subs })}
+                          onDraft={(subDraft) => setEditing({ ...editing, subDraft })}
+                        />
                         <div className="ed-bar">
                           {mode === "work" && (
                             <select
@@ -367,9 +488,17 @@ export default function App() {
                       >
                         {t.text}
                       </button>
+                      {t.subs && t.subs.length > 0 && (
+                        <small className="subcount" aria-label={`세부 항목 ${subProgress(t).total}개 중 ${subProgress(t).done}개 했어요`}>
+                          {subProgress(t).done}/{subProgress(t).total}
+                        </small>
+                      )}
                       <button className="x" aria-label={`${t.text} 삭제`} onClick={() => remove(key, t.id)}>
                         <X size={18} aria-hidden="true" />
                       </button>
+                      {t.subs && t.subs.length > 0 && (
+                        <SubList subs={t.subs} onCycle={(subId) => cycleMark(key, t.id, subId)} />
+                      )}
                     </li>
                   ),
                 )}
@@ -422,13 +551,19 @@ export default function App() {
         )}
       </details>
 
-      {undo && (
+      {undo ? (
         <div className="snack" role="status">
           <span>삭제했어요</span>
           <button type="button" onClick={doUndo}>
             되돌리기
           </button>
         </div>
+      ) : (
+        notice && (
+          <div className="snack notice" role="status">
+            <span>{notice}</span>
+          </div>
+        )
       )}
     </div>
   );

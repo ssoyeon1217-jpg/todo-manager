@@ -34,10 +34,18 @@ export interface Routine {
   days: number[];
 }
 
+/** 하루의 할 일 개수 요약 (월간 달력 표시용) */
+export interface DaySummary {
+  done: number;
+  total: number;
+}
+
 /** 저장소 추상화 — 지금은 localStorage, 이후 서버(DB)로 교체 가능 */
 export interface Storage {
   getDay(ymd: string): Promise<DayDoc | null>;
   saveDay(ymd: string, doc: DayDoc): Promise<void>;
+  /** "YYYY-MM" 한 달 동안 할 일이 있는 날의 요약. 키는 "YYYY-MM-DD" */
+  getMonthSummary(ym: string): Promise<Record<string, DaySummary>>;
   getSomeday(): Promise<Task[]>;
   saveSomeday(items: Task[]): Promise<void>;
   getRoutines(): Promise<Routine[]>;

@@ -1,4 +1,5 @@
-import type { DayDoc, Routine, Storage, Task } from "../types";
+import { summarizeDay } from "./tasks";
+import type { DayDoc, DaySummary, Routine, Storage, Task } from "../types";
 
 const PREFIX = "todo-manager:";
 
@@ -26,6 +27,25 @@ export const localStorageStore: Storage = {
   },
   async saveDay(ymd, doc) {
     write(`day:${ymd}`, doc);
+  },
+  async getMonthSummary(ym) {
+    const out: Record<string, DaySummary> = {};
+    try {
+      const dayPrefix = `${PREFIX}day:`;
+      const monthPrefix = `${dayPrefix}${ym}-`;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith(monthPrefix)) continue;
+        const ymd = key.slice(dayPrefix.length);
+        const doc = read<DayDoc | null>(`day:${ymd}`, null);
+        if (!doc) continue;
+        const s = summarizeDay(doc);
+        if (s.total > 0) out[ymd] = s;
+      }
+    } catch {
+      /* localStorage를 쓸 수 없는 환경: 빈 요약 */
+    }
+    return out;
   },
   async getSomeday() {
     return read<Task[]>("someday", []);

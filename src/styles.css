@@ -333,3 +333,182 @@ li.editing {
   background: var(--note);
   color: #1f2a33;
 }
+
+/* ---------- 상단 버튼 / 되돌리기 / 드래그 ---------- */
+.sub {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.pill {
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.85rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+}
+.pill:hover {
+  background: var(--paper);
+}
+.grip {
+  flex: none;
+  width: 22px;
+  height: 30px;
+  display: grid;
+  place-content: center;
+  cursor: grab;
+  opacity: 0.35;
+  touch-action: none;
+  user-select: none;
+  font-size: 1rem;
+}
+li.ghost {
+  opacity: 0.35;
+}
+.snack {
+  position: fixed;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 92vw;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1f2a33;
+  color: #fff;
+  padding: 5px 6px 5px 18px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  z-index: 5;
+}
+.snack button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--note);
+  color: #1f2a33;
+  padding: 9px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* ---------- 언젠가 ---------- */
+.someday {
+  margin-top: 26px;
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 4px 12px 8px;
+}
+.someday summary {
+  cursor: pointer;
+  padding: 10px 0;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+}
+.someday summary::-webkit-details-marker {
+  display: none;
+}
+.someday summary small {
+  color: var(--soft);
+}
+.someday li {
+  flex-wrap: wrap;
+  background: var(--bg);
+  margin-bottom: 6px;
+}
+.someday .empty {
+  color: var(--soft);
+  font-size: 0.88rem;
+  margin: 0;
+  padding: 4px 0 8px;
+}
+.bring {
+  flex: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: var(--note);
+  color: #1f2a33;
+}
+.pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 100%;
+  padding: 6px 0 2px 28px;
+}
+.pick .chip {
+  background: var(--paper);
+}
+
+/* ---------- 월간 달력 ---------- */
+.mhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mhead h3 {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+.mgrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.mdow {
+  margin: 8px 0 4px;
+}
+.mdow span {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--soft);
+}
+.mcell {
+  border: 0;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.mcell small {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+.mcell.blank {
+  background: transparent;
+  cursor: default;
+}
+.mcell.has {
+  background: var(--note);
+  color: #1f2a33;
+}
+.mcell.all {
+  background: var(--c4);
+  color: #fff;
+}
+.mcell.today {
+  box-shadow: inset 0 0 0 2px var(--c1);
+}
+.mcell.sel {
+  box-shadow: inset 0 0 0 3px var(--ink);
+  font-weight: 700;
+}

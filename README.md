@@ -10,6 +10,7 @@ Claude 아티팩트로 만들어 쓰던 "오늘 할 일" 앱을 독립 프로젝
 | 프레임워크 | React 18 + TypeScript | 체크 · 정렬 · 편집처럼 상태가 많은 UI에 적합하고, 타입으로 실수를 줄일 수 있음 |
 | 빌드 도구 | Vite | 설정이 단순하고 빠름 |
 | 테스트 | Vitest | Vite와 설정을 공유, 로직 단위 테스트 용도 |
+| 드래그 | sortablejs | 마우스·터치 모두 지원하는 가벼운 정렬 라이브러리 |
 | 저장 | localStorage (`Storage` 인터페이스) | 서버 없이 바로 사용, 이후 DB로 교체 가능하도록 추상화 |
 | 배포 | GitHub Pages (GitHub Actions) | 무료, 휴대폰 홈 화면 바로가기(PWA)로 사용 가능 |
 
@@ -32,11 +33,15 @@ todo-manager/
 ├─ src/
 │  ├─ main.tsx          # 진입점
 │  ├─ App.tsx           # 화면 (날짜 이동 · 입력 · 칸별 목록)
+│  ├─ components/
+│  │  ├─ SortableList.tsx  # 드래그 정렬 목록 (sortablejs)
+│  │  └─ MonthView.tsx     # 월간 달력
 │  ├─ constants.ts      # 칸(일과전/일과중…) 정의, 요일
 │  ├─ types.ts          # Task · DayDoc · Routine · Storage 타입
 │  ├─ styles.css
 │  └─ lib/
-│     ├─ date.ts        # 날짜 유틸
+│     ├─ date.ts        # 날짜 유틸 (달력 칸 계산 포함)
+│     ├─ date.test.ts
 │     ├─ tasks.ts       # 순수 로직 (정렬, 진행률 …)
 │     ├─ tasks.test.ts
 │     └─ storage.ts     # localStorage 저장소

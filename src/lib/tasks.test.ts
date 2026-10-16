@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { blankDay, editTask, sortTimedInPlace, progressOf } from "./tasks";
+import {
+  blankDay,
+  editTask,
+  insertAt,
+  progressOf,
+  reorder,
+  sortTimedInPlace,
+  summarizeDay,
+} from "./tasks";
 import type { DayDoc, Task } from "../types";
 
 const t = (text: string, time?: string, done = false): Task => ({
@@ -53,5 +61,40 @@ describe("editTask", () => {
   it("내용이 비어 있으면 바꾸지 않는다", () => {
     const start = base();
     expect(editTask(start, "school", "a", { text: "  ", time: "", section: "school" })).toBe(start);
+  });
+});
+
+describe("reorder", () => {
+  it("항목을 원하는 자리로 옮긴다", () => {
+    expect(reorder(["a", "b", "c"], 0, 2)).toEqual(["b", "c", "a"]);
+    expect(reorder(["a", "b", "c"], 2, 0)).toEqual(["c", "a", "b"]);
+  });
+
+  it("범위를 벗어나거나 같은 자리면 그대로 둔다", () => {
+    const list = ["a", "b"];
+    expect(reorder(list, 0, 0)).toBe(list);
+    expect(reorder(list, 5, 0)).toBe(list);
+  });
+});
+
+describe("insertAt", () => {
+  it("지정한 자리에 끼워 넣고, 범위를 벗어나면 보정한다", () => {
+    expect(insertAt(["a", "c"], 1, "b")).toEqual(["a", "b", "c"]);
+    expect(insertAt(["a"], 9, "z")).toEqual(["a", "z"]);
+    expect(insertAt(["a"], -3, "z")).toEqual(["z", "a"]);
+  });
+});
+
+describe("summarizeDay", () => {
+  it("모든 칸의 완료/전체 개수를 센다", () => {
+    const doc: DayDoc = {
+      ...blankDay(),
+      sections: { go: [t("a", undefined, true)], home: [t("b"), t("c", undefined, true)] },
+    };
+    expect(summarizeDay(doc)).toEqual({ done: 2, total: 3 });
+  });
+
+  it("비어 있으면 0/0", () => {
+    expect(summarizeDay(blankDay())).toEqual({ done: 0, total: 0 });
   });
 });

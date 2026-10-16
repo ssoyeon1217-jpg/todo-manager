@@ -1,4 +1,4 @@
-import type { DayDoc, SectionKey, Task } from "../types";
+import type { DayDoc, DaySummary, SectionKey, Task } from "../types";
 
 export function newId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -66,6 +66,27 @@ export function editTask(
   const without = source.filter((t) => t.id !== id);
   const target = [...(doc.sections[edit.section] ?? []), updated];
   return withSection(withSection(doc, from, without), edit.section, sortTimedInPlace(target));
+}
+
+/** from 자리의 항목을 to 자리로 옮긴 새 배열 (범위를 벗어나면 원본 그대로) */
+export function reorder<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+/** index 자리에 항목을 끼워 넣은 새 배열 (index가 범위를 벗어나면 끝/처음으로 보정) */
+export function insertAt<T>(list: T[], index: number, item: T): T[] {
+  const i = Math.max(0, Math.min(index, list.length));
+  return [...list.slice(0, i), item, ...list.slice(i)];
+}
+
+/** 하루 문서 전체(모든 칸)의 완료/전체 개수 */
+export function summarizeDay(doc: DayDoc): DaySummary {
+  const all = Object.values(doc.sections).flatMap((list) => list ?? []);
+  return progressOf(all);
 }
 
 export function progressOf(tasks: Task[]): { done: number; total: number } {

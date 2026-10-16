@@ -309,10 +309,6 @@ header h1,
 .addrow input::placeholder {
   color: var(--ink-3);
 }
-.addrow input.time {
-  flex: none;
-  width: 112px;
-}
 .addrow input:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -888,4 +884,14 @@ li {
   width: 20px;
   height: 20px;
   accent-color: var(--accent);
+}
+
+/* 로그인 화면 */
+.login .primary-btn {
+  margin-top: 8px;
+}
+.login-error {
+  margin: 16px 0 0;
+  color: var(--accent);
+  font-size: var(--fs-sm);
 }

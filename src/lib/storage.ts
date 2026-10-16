@@ -67,3 +67,21 @@ export const localStorageStore: Storage = {
     write("settings", settings);
   },
 };
+
+/** 이 기기(localStorage)에 저장된 모든 기록을 {key, value} 로 읽습니다. (서버로 옮길 때 사용) */
+export function readLocalRows(): { key: string; value: unknown }[] {
+  const rows: { key: string; value: unknown }[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const full = localStorage.key(i);
+      if (!full || !full.startsWith(PREFIX)) continue;
+      const key = full.slice(PREFIX.length);
+      if (key !== "someday" && key !== "routines" && key !== "settings" && !key.startsWith("day:")) continue;
+      const raw = localStorage.getItem(full);
+      if (raw) rows.push({ key, value: JSON.parse(raw) as unknown });
+    }
+  } catch {
+    /* 읽을 수 없으면 옮길 것이 없는 것으로 */
+  }
+  return rows;
+}

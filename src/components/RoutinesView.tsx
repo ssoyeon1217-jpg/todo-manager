@@ -9,6 +9,8 @@ interface Props {
   onRoutines: (next: Routine[]) => void;
   onSettings: (next: Settings) => void;
   onClose: () => void;
+  email?: string;
+  onSignOut?: () => void;
 }
 
 function toggleDay(list: number[], d: number): number[] {
@@ -16,7 +18,7 @@ function toggleDay(list: number[], d: number): number[] {
 }
 
 /** 루틴(요일별 반복)과 쉬는 요일 설정 화면. 바꾸면 바로 저장됩니다. */
-export default function RoutinesView({ routines, settings, onRoutines, onSettings, onClose }: Props) {
+export default function RoutinesView({ routines, settings, onRoutines, onSettings, onClose, email, onSignOut }: Props) {
   const patch = (id: string, p: Partial<Routine>) =>
     onRoutines(routines.map((r) => (r.id === id ? { ...r, ...p } : r)));
 
@@ -126,6 +128,16 @@ export default function RoutinesView({ routines, settings, onRoutines, onSetting
           ))}
         </div>
       </div>
+
+      {onSignOut && (
+        <div className="rsec">
+          <h2>계정</h2>
+          {email && <p className="rhint">{email} 으로 로그인되어 있어요.</p>}
+          <button type="button" className="outline-btn" onClick={onSignOut}>
+            로그아웃
+          </button>
+        </div>
+      )}
     </>
   );
 }

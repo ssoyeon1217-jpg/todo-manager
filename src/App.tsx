@@ -8,7 +8,6 @@ import SubList from "./components/SubList";
 import { DEFAULT_SETTINGS, REST_SECTION, SOMEDAY_SECTION, WORK_SECTIONS } from "./constants";
 import { addDays, daysFromToday, startOfToday, titleParts, toYmd } from "./lib/date";
 import { applyRoutines } from "./lib/routines";
-import { localStorageStore as store } from "./lib/storage";
 import {
   blankDay,
   cycleSubMark,
@@ -22,7 +21,7 @@ import {
   subProgress,
   withSection,
 } from "./lib/tasks";
-import type { DayDoc, Routine, SectionKey, Settings, SubItem, Task } from "./types";
+import type { DayDoc, Routine, SectionKey, Settings, Storage, SubItem, Task } from "./types";
 
 type DaySection = Exclude<SectionKey, "someday">;
 
@@ -45,14 +44,20 @@ type UndoState =
 
 const UNDO_MS = 6000;
 
-export default function App() {
+interface AppProps {
+  store: Storage;
+  /** 로그인한 계정 (서버 모드일 때만) */
+  email?: string;
+  onSignOut?: () => void;
+}
+
+export default function App({ store, email, onSignOut }: AppProps) {
   const [view, setView] = useState<"day" | "month" | "routines">("day");
   const [cur, setCur] = useState<Date>(startOfToday);
   const [doc, setDoc] = useState<DayDoc>(blankDay());
   const [someday, setSomeday] = useState<Task[]>([]);
   const [target, setTarget] = useState<SectionKey>("school");
   const [text, setText] = useState("");
-  const [time, setTime] = useState("");
   const [editing, setEditing] = useState<Editing | null>(null);
   const [undo, setUndo] = useState<UndoState | null>(null);
   const [bringId, setBringId] = useState<string | null>(null);
@@ -194,11 +199,10 @@ export default function App() {
     if (effTarget === "someday") {
       updateSomeday([...someday, makeTask(text)]);
     } else {
-      const list = [...(doc.sections[effTarget] ?? []), makeTask(text, time || undefined)];
+      const list = [...(doc.sections[effTarget] ?? []), makeTask(text)];
       update(withSection(doc, effTarget, sortTimedInPlace(list)));
     }
     setText("");
-    setTime("");
   }
 
   function toggle(key: DaySection, id: string) {
@@ -282,6 +286,8 @@ export default function App() {
           onRoutines={updateRoutines}
           onSettings={updateSettings}
           onClose={closeRoutines}
+          email={email}
+          onSignOut={onSignOut}
         />
       </div>
     );
@@ -378,14 +384,6 @@ export default function App() {
             placeholder="할 일을 입력하세요"
             aria-label="할 일"
           />
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            aria-label="시간(선택)"
-            className="time"
-            disabled={effTarget === "someday"}
-          />
           <button type="submit" className="primary-btn" disabled={!text.trim()}>
             추가
           </button>
@@ -450,12 +448,6 @@ export default function App() {
                               ))}
                             </select>
                           )}
-                          <input
-                            type="time"
-                            value={editing.time}
-                            onChange={(e) => setEditing({ ...editing, time: e.target.value })}
-                            aria-label="시간(선택)"
-                          />
                           <div className="actions">
                             <button type="button" className="text-btn" onClick={() => setEditing(null)}>
                               취소
